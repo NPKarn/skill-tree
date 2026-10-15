@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Skill Tree – Biomedical Engineer</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark;--bg:#0d0a08;--panel:#1a1410;--gold:#d9b25f;--gold2:#7a5a22;--ink:#efe4cc;--dim:#8d7f68}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 50% 0,#2a1d12,var(--bg) 60%) fixed,var(--bg);color:var(--ink);font-family:'Sarabun','Noto Sans Thai',system-ui,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--gold2);background:#120d09}
+h1{font-size:20px;margin:0;color:var(--gold);font-family:Georgia,'Noto Serif Thai',serif;letter-spacing:.5px}
+.sp{margin-left:auto;display:flex;gap:10px;align-items:center}
+.sp b{font-size:22px;color:#fff3c9}
+button{font:inherit;cursor:pointer}
+.btn{background:linear-gradient(#4a3516,#2a1d0b);border:1px solid var(--gold2);color:var(--gold);padding:6px 12px;border-radius:3px}
+.btn:hover{border-color:var(--gold)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;padding:10px 18px;border-bottom:1px solid #2a2118}
+.tab{background:#1a1410;border:1px solid #3a2e20;color:var(--dim);padding:6px 12px;border-radius:3px;border-left:4px solid var(--c,#555)}
+.tab.on{color:var(--ink);border-color:var(--gold);background:#2a1f12}
+.wrap{overflow:auto;height:calc(100vh - 150px);min-height:480px}
+#cv{position:relative;width:1500px;height:1760px}
+svg{position:absolute;inset:0}
+.zone{position:absolute;top:8px;bottom:8px;border:2px dashed var(--c);border-radius:6px;background:color-mix(in srgb,var(--c) 6%,transparent)}
+.zone span{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:var(--c);color:#fff;padding:6px 14px;font-weight:700;font-size:13px;text-align:center;white-space:nowrap;border-radius:2px}
+.nd{position:absolute;width:96px;height:112px;background:linear-gradient(#2a2016,#17110c);border:1px solid var(--gold2);border-radius:4px;padding:6px 4px 4px;text-align:center;transition:opacity .2s}
+.nd.dim{opacity:.18}
+.ic{width:48px;height:48px;margin:0 auto;border:2px solid var(--gold2);background:#0b0805;border-radius:4px;font-size:26px;line-height:44px;cursor:pointer;position:relative;box-shadow:inset 0 0 8px #000}
+.nd.lock .ic{filter:grayscale(1) brightness(.5);cursor:not-allowed}
+.nd.on .ic{border-color:var(--gold);box-shadow:0 0 10px color-mix(in srgb,var(--gold) 60%,transparent),inset 0 0 8px #000}
+.nd.max .ic{border-color:#fff3c9;box-shadow:0 0 14px #ffd86b}
+.nm{font-size:10.5px;line-height:1.2;height:26px;margin:3px 0 2px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.ct{display:flex;align-items:center;justify-content:space-between}
+.ct button{width:24px;height:20px;padding:0;border:1px solid var(--gold2);background:#3a2a12;color:var(--gold);font-weight:700;line-height:1;border-radius:2px}
+.ct button:hover{background:#5a4118}
+.ct button:disabled{opacity:.3;cursor:not-allowed}
+.lv{font-size:12px;font-weight:700;color:var(--ink)}
+.nd.lock .lv{color:var(--dim)}
+.shake{animation:sh .25s}
+@keyframes sh{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+#tip{position:fixed;z-index:9;pointer-events:none;background:#120d09;border:1px solid var(--gold);padding:8px 10px;font-size:12px;max-width:230px;display:none;border-radius:3px;line-height:1.5}
+#tip b{color:var(--gold);font-size:13px}
+#msg{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#3a1410;border:1px solid #c0503a;padding:8px 14px;border-radius:3px;display:none;z-index:10}
+@media (prefers-reduced-motion:reduce){.shake{animation:none}}
+:root[data-theme="light"]{color-scheme:dark}
+</style></head><body>
+<header><h1>แผนผังทักษะ · Biomedical Engineer</h1>
+<div class="sp"><span>SP คงเหลือ</span><b id="spv"></b>
+<button class="btn" id="img">โหลดเลเวลจากภาพ</button><button class="btn" id="rst">รีเซ็ต</button></div></header>
+<div class="tabs" id="tabs"></div>
+<div class="wrap"><div id="cv"></div></div>
+<div id="tip"></div><div id="msg"></div>
+<script>
+const TOTAL=150,MAXLV=5,W=106,H=140,PX=14,PY=70,CW=96,CH=112;
+const BR={ds:['Data Science','#2e62a1'],pg:['Programming','#8a35a0'],ee:['Electrical – Electronic','#c0809f'],bm:['Biomedical Engineering','#6a9bd0'],me:['Mechanic / Mechatronics','#e8909c']};
+const ZONES=[['ds',0,3],['pg',3,2],['ee',5,4],['bm',9,3],['me',12,2]];
+// id|ชื่อ|col|row|สาขา|เลเวลในภาพ|ไอคอน|ทักษะที่ต้องมีก่อน
+const N=`st|Statistics|1|0|ds|2|📊|
+ai|Artificial Intelligence|1|6|ds|2|🧠|st,py
+ml|Machine Learning|1|7|ds|2|🤖|ai
+sk|scikit-learn|0|8|ds|2|🔬|ml
+dl|Deep Learning|1|8|ds|2|🕸️|ml
+tf|TensorFlow|0|9|ds|2|🔶|dl
+ke|Keras|1|9|ds|2|🧩|dl
+pt|PyTorch|2|9|ds|2|🔥|dl
+sq|SQL|3|0|pg|2|🗄️|
+rp|R Programming|3|1|pg|3|📈|st
+c|C|3|2|pg|3|⚙️|
+cp|C++|3|3|pg|3|➕|c,dc
+js|JavaScript|3|4|pg|2|📜|
+py|Python|3|5|pg|3|🐍|
+h5|HTML5|3|6|pg|2|🌐|
+ma|MATLAB|3|7|pg|3|🧮|
+sp|(Medical) Signal Processing|3|8|pg|2|〰️|ma
+mi|(Medical) Image Processing|3|9|pg|2|🩻|sp
+vc|VS Code|3|10|pg|2|📝|
+vs|Visual Studio|3|11|pg|2|💠|
+th|Thonny|4|6|pg|2|🐤|py
+io|IoT|4|7|pg|2|📡|ar
+nr|NodeRED|4|8|pg|2|🔗|io
+el|Electrical|7|0|ee|2|⚡|
+ms|Multisim|5|1|ee|2|🔌|el
+px|Proteus 8 Pro|6|1|ee|2|🖥️|el
+en|Electronic|7|1|ee|2|🔋|el
+ez|EasyEDA|8|1|ee|2|🧷|el
+dc|Digital Circuit|7|2|ee|2|🔢|en
+mc|Microcontroller|7|4|ee|3|🧠|cp,dc
+ro|ROS|4|5|ee|2|🛰️|mc
+ar|Arduino IDE (Arduino/STM32/ESP32)|5|5|ee|3|🎛️|mc
+wo|Wokwi|6|5|ee|2|🧪|mc
+s3|STM32CubeIDE|6|6|ee|2|🧱|ar
+kl|keil uvision|7|6|ee|2|👁️|ar
+op|OpenPLC|8|6|ee|2|🏭|ar
+rm|Research Methodology|10|0|bm|4|📚|
+an|Anatomy and Physiology|10|1|bm|3|🫀|
+be|Biomedical Electronic|9|2|bm|3|💓|en,an
+bi|Biomedical Instrumentation|10|3|bm|3|🩺|an,be
+mr|Medical Radiation|10|4|bm|2|☢️|
+bc|Biomechanic|11|2|bm|3|🦴|an
+bt|Biomaterial|11|3|bm|2|🧬|mt
+sa|Statics Engineering|13|0|me|0|🏗️|
+dy|Dynamic Engineering|13|1|me|0|🌀|sa
+mt|Material Engineering|13|2|me|2|🧱|
+rb|Robotic|13|5|me|2|🦾|mc
+hd|Engineering (Hand) Drawing|13|6|me|2|✏️|
+sw|Solidwork|13|7|me|2|📐|hd
+os|Onshape|13|8|me|3|🧊|sw`.split('\n').map(l=>{const a=l.split('|');return{id:a[0],n:a[1],c:+a[2],r:+a[3],b:a[4],img:+a[5],ic:a[6],p:a[7]?a[7].split(','):[]}});
+const M=Object.fromEntries(N.map(n=>[n.id,n]));
+N.forEach(n=>n.k=[]);N.forEach(n=>n.p.forEach(p=>M[p].k.push(n.id)));
+let L={},focus='all';N.forEach(n=>L[n.id]=0);
+const $=s=>document.querySelector(s),cv=$('#cv');
+const spent=()=>Object.values(L).reduce((a,b)=>a+b,0);
+const open=n=>n.p.every(p=>L[p]>0);
+const canUp=n=>open(n)&&L[n.id]<MAXLV&&spent()<TOTAL;
+const canDn=n=>L[n.id]>0&&!(L[n.id]===1&&n.k.some(k=>L[k]>0));
+const px=n=>PX+n.c*W,py=n=>PY+n.r*H;
+let msgT;function toast(t){const m=$('#msg');m.textContent=t;m.style.display='block';clearTimeout(msgT);msgT=setTimeout(()=>m.style.display='none',1800)}
+function up(id){const n=M[id];if(!open(n)){const need=n.p.filter(p=>!L[p]).map(p=>M[p].n).join(', ');return toast('ต้องอัปทักษะก่อน: '+need)}
+ if(L[id]>=MAXLV)return toast('เลเวลสูงสุดแล้ว');if(spent()>=TOTAL)return toast('SP ไม่พอ');L[id]++;draw()}
+function dn(id){const n=M[id];if(!L[id])return;if(!canDn(n))return toast('ลดไม่ได้ ยังมีทักษะที่ต่อยอดจากข้อนี้');L[id]--;draw()}
+function draw(){
+ let h='';
+ ZONES.forEach(([b,c,w])=>{h+=`<div class="zone" style="--c:${BR[b][1]};left:${PX+c*W-6}px;width:${w*W-2}px"><span>${BR[b][0]}</span></div>`});
+ let s=`<svg width="1500" height="1760">`;
+ N.forEach(n=>n.p.forEach(p=>{const a=M[p],x1=px(a)+CW/2,y1=py(a)+CH,x2=px(n)+CW/2,y2=py(n);
+  const on=L[p]>0,col=on?BR[a.b][1]:'#3a3128';
+  const d=x1==x2?`M${x1} ${y1}V${y2}`:`M${x1} ${y1}V${y2-14}H${x2}V${y2}`;
+  s+=`<path d="${d}M${x2-5} ${y2-8}L${x2} ${y2}L${x2+5} ${y2-8}" fill="none" stroke="${col}" stroke-width="${on?4:3}" stroke-linejoin="round" ${on?`style="filter:drop-shadow(0 0 3px ${col})"`:''}/>`}));
+ h+=s+'</svg>';
+ N.forEach(n=>{const o=open(n),v=L[n.id];
+  h+=`<div class="nd ${o?'':'lock'} ${v?'on':''} ${v==MAXLV?'max':''} ${focus!='all'&&focus!=n.b?'dim':''}" data-id="${n.id}" style="left:${px(n)}px;top:${py(n)}px">
+  <div class="ic" style="border-color:${v?BR[n.b][1]:''}">${n.ic}</div><div class="nm">${n.n}</div>
+  <div class="ct"><button data-d="-" ${canDn(n)?'':'disabled'} aria-label="ลด ${n.n}">−</button><span class="lv">${v}/${MAXLV}</span><button data-d="+" ${canUp(n)?'':'disabled'} aria-label="เพิ่ม ${n.n}">+</button></div></div>`});
+ cv.innerHTML=h;$('#spv').textContent=(TOTAL-spent())+' / '+TOTAL;
+ const T=[['all','ทั้งหมด','#d9b25f']].concat(Object.entries(BR).map(([k,v])=>[k,v[0],v[1]]));
+ $('#tabs').innerHTML=T.map(([k,t,c])=>{const sp=k=='all'?spent():N.filter(n=>n.b==k).reduce((a,n)=>a+L[n.id],0);
+  return `<button class="tab ${focus==k?'on':''}" data-t="${k}" style="--c:${c}">${t} (${sp} SP)</button>`}).join('');
+}
+cv.addEventListener('click',e=>{const nd=e.target.closest('.nd');if(!nd)return;const id=nd.dataset.id,b=e.target.closest('button');
+ if(b){b.dataset.d=='-'?dn(id):up(id)}else if(e.target.closest('.ic')){up(id)}
+ if(!open(M[id])&&!b){nd.classList.add('shake')}});
+cv.addEventListener('contextmenu',e=>{const nd=e.target.closest('.nd');if(nd){e.preventDefault();dn(nd.dataset.id)}});
+cv.addEventListener('mousemove',e=>{const nd=e.target.closest('.nd'),t=$('#tip');
+ if(!nd){t.style.display='none';return}const n=M[nd.dataset.id];
+ const req=n.p.length?'ต้องมี: '+n.p.map(p=>M[p].n+(L[p]?' ✓':' ✗')).join(', '):'ไม่มีเงื่อนไข';
+ t.innerHTML=`<b>${n.n}</b><br>${BR[n.b][0]}<br>เลเวล ${L[n.id]}/${MAXLV}<br>${req}<br><span style="color:#8d7f68">คลิกไอคอน = เพิ่ม · คลิกขวา = ลด</span>`;
+ t.style.display='block';t.style.left=Math.min(e.clientX+14,innerWidth-250)+'px';t.style.top=(e.clientY+14)+'px'});
+cv.addEventListener('mouseleave',()=>$('#tip').style.display='none');
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b){focus=b.dataset.t;draw()}});
+$('#rst').onclick=()=>{N.forEach(n=>L[n.id]=0);draw()};
+$('#img').onclick=()=>{N.forEach(n=>L[n.id]=n.img);draw();toast('โหลดเลเวลตามภาพแล้ว')};
+draw();
+</script></body></html>
