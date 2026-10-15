@@ -113,6 +113,10 @@ const SAVED={};
 const OWNER_HASH='8650fd1ad9bcef819fa7ab1f2eabee8572e1759779b5a9d46eb161cd697a314e';
 const sha=t=>crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)).then(b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''));
 let EDIT=false,L={},focus='all';N.forEach(n=>L[n.id]=SAVED[n.id]||0);
+// จดจำเลเวลในเบราว์เซอร์ของเจ้าของ (localStorage) แล้วโหลดกลับมาเมื่อเปิดเว็บใหม่
+const KEY='skilltree.levels.v1';
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)N.forEach(n=>{const v=s[n.id];if(Number.isInteger(v)&&v>=0&&v<=MAXLV)L[n.id]=v})}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(L))}catch(e){}};
 const $=s=>document.querySelector(s),cv=$('#cv');
 const spent=()=>Object.values(L).reduce((a,b)=>a+b,0);
 const open=n=>n.p.every(p=>L[p]>0);
@@ -121,8 +125,8 @@ const canDn=n=>EDIT&&L[n.id]>0&&!(L[n.id]===1&&n.k.some(k=>L[k]>0));
 const px=n=>PX+n.c*W,py=n=>PY+n.r*H;
 let msgT;function toast(t){const m=$('#msg');m.textContent=t;m.style.display='block';clearTimeout(msgT);msgT=setTimeout(()=>m.style.display='none',1800)}
 function up(id){if(!EDIT)return toast('โหมดดูอย่างเดียว เฉพาะเจ้าของที่แก้ไขได้');const n=M[id];if(!open(n)){const need=n.p.filter(p=>!L[p]).map(p=>M[p].n).join(', ');return toast('ต้องอัปทักษะก่อน: '+need)}
- if(L[id]>=MAXLV)return toast('เลเวลสูงสุดแล้ว');if(spent()>=TOTAL)return toast('SP ไม่พอ');L[id]++;draw()}
-function dn(id){if(!EDIT)return toast('โหมดดูอย่างเดียว เฉพาะเจ้าของที่แก้ไขได้');const n=M[id];if(!L[id])return;if(!canDn(n))return toast('ลดไม่ได้ ยังมีทักษะที่ต่อยอดจากข้อนี้');L[id]--;draw()}
+ if(L[id]>=MAXLV)return toast('เลเวลสูงสุดแล้ว');if(spent()>=TOTAL)return toast('SP ไม่พอ');L[id]++;save();draw()}
+function dn(id){if(!EDIT)return toast('โหมดดูอย่างเดียว เฉพาะเจ้าของที่แก้ไขได้');const n=M[id];if(!L[id])return;if(!canDn(n))return toast('ลดไม่ได้ ยังมีทักษะที่ต่อยอดจากข้อนี้');L[id]--;save();draw()}
 function draw(){
  let h='';
  ZONES.forEach(([b,c,w])=>{h+=`<div class="zone" style="--c:${BR[b][1]};left:${PX+c*W-6}px;width:${w*W-2}px"><span>${BR[b][0]}</span></div>`});
@@ -154,8 +158,8 @@ cv.addEventListener('mousemove',e=>{const nd=e.target.closest('.nd'),t=$('#tip')
  t.style.display='block';t.style.left=Math.min(e.clientX+14,innerWidth-250)+'px';t.style.top=(e.clientY+14)+'px'});
 cv.addEventListener('mouseleave',()=>$('#tip').style.display='none');
 $('#tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b){focus=b.dataset.t;draw()}});
-$('#rst').onclick=()=>{N.forEach(n=>L[n.id]=0);draw()};
-$('#img').onclick=()=>{N.forEach(n=>L[n.id]=n.img);draw();toast('โหลดเลเวลตามภาพแล้ว')};
+$('#rst').onclick=()=>{N.forEach(n=>L[n.id]=0);save();draw()};
+$('#img').onclick=()=>{N.forEach(n=>L[n.id]=n.img);save();draw();toast('โหลดเลเวลตามภาพแล้ว')};
 $('#own').onclick=async()=>{if(EDIT){EDIT=false;draw();return}const p=prompt('รหัสผ่านเจ้าของ');if(!p)return;try{if(await sha(p)===OWNER_HASH){EDIT=true;draw();toast('ปลดล็อกโหมดแก้ไขแล้ว')}else toast('รหัสผ่านไม่ถูกต้อง')}catch(e){toast('เบราว์เซอร์นี้ตรวจรหัสผ่านไม่ได้')}};
 $('#cp').onclick=()=>{const t='const SAVED='+JSON.stringify(Object.fromEntries(Object.entries(L).filter(e=>e[1])))+';';navigator.clipboard.writeText(t).then(()=>toast('คัดลอกแล้ว นำไปแทนบรรทัด const SAVED ในไฟล์'),()=>prompt('คัดลอกข้อความนี้',t))};
 draw();
