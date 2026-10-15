@@ -35,7 +35,7 @@ svg{position:absolute;inset:0}
 .ct button:disabled{opacity:.3;cursor:not-allowed}
 .lv{font-size:12px;font-weight:700;color:var(--ink)}
 .nd.lock .lv{color:var(--dim)}
-.ct.ro{justify-content:center}.nd.max .lv{color:#ffd86b;text-shadow:0 0 6px #ffb830;letter-spacing:1px}
+.ct button.lk{opacity:.45;cursor:not-allowed}.nd.max .lv{color:#ffd86b;text-shadow:0 0 6px #ffb830;letter-spacing:1px}
 .shake{animation:sh .25s}
 @keyframes sh{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 #tip{position:fixed;z-index:9;pointer-events:none;background:#120d09;border:1px solid var(--gold);padding:8px 10px;font-size:12px;max-width:230px;display:none;border-radius:3px;line-height:1.5}
@@ -135,7 +135,7 @@ function draw(){
  N.forEach(n=>{const o=open(n),v=L[n.id];
   h+=`<div class="nd ${o?'':'lock'} ${v?'on':''} ${v==MAXLV?'max':''} ${focus!='all'&&focus!=n.b?'dim':''}" data-id="${n.id}" style="left:${px(n)}px;top:${py(n)}px">
   <div class="ic" style="border-color:${v?BR[n.b][1]:''}">${n.ic}</div><div class="nm">${n.n}</div>
-  <div class="ct ${EDIT?'':'ro'}">${EDIT?`<button data-d="-" ${canDn(n)?'':'disabled'} aria-label="ลด ${n.n}">−</button>`:''}<span class="lv">${v==MAXLV?'MAX':v+'/'+MAXLV}</span>${EDIT?`<button data-d="+" ${canUp(n)?'':'disabled'} aria-label="เพิ่ม ${n.n}">+</button>`:''}</div></div>`});
+  <div class="ct"><button data-d="-" class="${EDIT?'':'lk'}" ${EDIT&&!canDn(n)?'disabled':''} aria-label="ลด ${n.n}">−</button><span class="lv">${v==MAXLV?'MAX':v+'/'+MAXLV}</span><button data-d="+" class="${EDIT?'':'lk'}" ${EDIT&&!canUp(n)?'disabled':''} aria-label="เพิ่ม ${n.n}">+</button></div></div>`});
  cv.innerHTML=h;$('#spv').textContent=(TOTAL-spent())+' / '+TOTAL;
  $('#rst').style.display=$('#img').style.display=$('#cp').style.display=EDIT?'':'none';
  $('#own').textContent=EDIT?'🔓 ล็อกกลับ':'🔒 เจ้าของ';
