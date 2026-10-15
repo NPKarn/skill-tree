@@ -46,7 +46,7 @@ svg{position:absolute;inset:0}
 </style></head><body>
 <header><h1>แผนผังทักษะ · Biomedical Engineer</h1>
 <div class="sp"><span>SP คงเหลือ</span><b id="spv"></b>
-<button class="btn" id="own">🔒 เจ้าของ</button><button class="btn" id="pub">เผยแพร่ให้ทุกคนเห็น</button><button class="btn" id="cp">คัดลอกโค้ดบันทึก</button><button class="btn" id="img">โหลดเลเวลจากภาพ</button><button class="btn" id="rst">รีเซ็ต</button></div></header>
+<button class="btn" id="own">🔒 เจ้าของ</button><button class="btn" id="tk">ตั้งค่า GitHub Token</button><button class="btn" id="pub">เผยแพร่ให้ทุกคนเห็น</button><button class="btn" id="cp">คัดลอกโค้ดบันทึก</button><button class="btn" id="img">โหลดเลเวลจากภาพ</button><button class="btn" id="rst">รีเซ็ต</button></div></header>
 <div class="tabs" id="tabs"></div>
 <div class="wrap"><div id="cv"></div></div>
 <div id="tip"></div><div id="msg"></div>
@@ -109,6 +109,8 @@ const M=Object.fromEntries(N.map(n=>[n.id,n]));
 N.forEach(n=>n.k=[]);N.forEach(n=>n.p.forEach(p=>M[p].k.push(n.id)));
 // เลเวลที่เจ้าของบันทึกไว้ (ทุกคนที่เข้าเว็บจะเห็นค่านี้) วางโค้ดจากปุ่ม "คัดลอกโค้ดบันทึก" ทับบรรทัดนี้
 const SAVED={};
+// ตั้งค่า GitHub ของคุณ (เปลี่ยน YOUR_USERNAME และชื่อ repo)
+const GH={owner:'YOUR_USERNAME',repo:'skill-tree',path:'levels.json',branch:'main'};
 // SHA-256 ของรหัสผ่านเจ้าของ (ค่าเริ่มต้น: owner-2026) ควรเปลี่ยนเป็นของตัวเอง
 const OWNER_HASH='8650fd1ad9bcef819fa7ab1f2eabee8572e1759779b5a9d46eb161cd697a314e';
 const sha=t=>crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)).then(b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''));
@@ -116,7 +118,21 @@ let EDIT=false,L={},focus='all';N.forEach(n=>L[n.id]=SAVED[n.id]||0);
 // จดจำเลเวลในเบราว์เซอร์ของเจ้าของ (localStorage) แล้วโหลดกลับมาเมื่อเปิดเว็บใหม่
 const KEY='skilltree.levels.v1';
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)N.forEach(n=>{const v=s[n.id];if(Number.isInteger(v)&&v>=0&&v<=MAXLV)L[n.id]=v})}catch(e){}
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(L))}catch(e){}};
+const api=`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.path}`;
+const tok=()=>{try{return localStorage.getItem('skilltree.gh')||''}catch(e){return ''}};
+const nz=()=>JSON.stringify(Object.fromEntries(Object.entries(L).filter(e=>e[1])));
+let tmr,busy=false,dirty=false;
+async function push(){
+ if(busy){dirty=true;return}busy=true;
+ try{
+  const h={Authorization:'Bearer '+tok(),Accept:'application/vnd.github+json'};
+  let sha;const g=await fetch(api+'?ref='+GH.branch+'&t='+Date.now(),{headers:h});
+  if(g.ok)sha=(await g.json()).sha;else if(g.status!=404)throw new Error(g.status);
+  const r=await fetch(api,{method:'PUT',headers:h,body:JSON.stringify({message:'update skill levels',content:btoa(nz()),branch:GH.branch,sha})});
+  if(!r.ok)throw new Error(r.status);toast('บันทึกขึ้น GitHub แล้ว');
+ }catch(e){toast('บันทึกขึ้น GitHub ไม่สำเร็จ ('+e.message+') ตรวจสอบ Token')}
+ busy=false;if(dirty){dirty=false;push()}}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(L))}catch(e){}if(tok()&&GH.owner!=='YOUR_USERNAME'){clearTimeout(tmr);tmr=setTimeout(push,1500)}};
 const $=s=>document.querySelector(s),cv=$('#cv');
 const spent=()=>Object.values(L).reduce((a,b)=>a+b,0);
 const open=n=>n.p.every(p=>L[p]>0);
@@ -142,7 +158,7 @@ function draw(){
   <div class="ct"><button data-d="-" class="${EDIT?'':'lk'}" ${EDIT&&!canDn(n)?'disabled':''} aria-label="ลด ${n.n}">−</button><span class="lv">${v==MAXLV?'MAX':v+'/'+MAXLV}</span><button data-d="+" class="${EDIT?'':'lk'}" ${EDIT&&!canUp(n)?'disabled':''} aria-label="เพิ่ม ${n.n}">+</button></div></div>`});
  cv.innerHTML=h;$('#spv').textContent=(TOTAL-spent())+' / '+TOTAL;
  $('#rst').style.display=$('#img').style.display=$('#cp').style.display=EDIT?'':'none';
- $('#pub').style.display=EDIT&&window.claude?'':'none';
+ $('#pub').style.display=EDIT&&window.claude?'':'none';$('#tk').style.display=EDIT?'':'none';
  $('#own').textContent=EDIT?'🔓 ล็อกกลับ':'🔒 เจ้าของ';
  const T=[['all','ทั้งหมด','#d9b25f']].concat(Object.entries(BR).map(([k,v])=>[k,v[0],v[1]]));
  $('#tabs').innerHTML=T.map(([k,t,c])=>{const sp=k=='all'?spent():N.filter(n=>n.b==k).reduce((a,n)=>a+L[n.id],0);
@@ -169,5 +185,8 @@ $('#pub').onclick=async()=>{try{const a=await claude.use('artifact');if(!a)retur
  c.querySelector('#cv').innerHTML='';c.querySelector('#tabs').innerHTML='';
  toast('กำลังเผยแพร่...');await a.publish('<!DOCTYPE html>\n'+c.outerHTML)}catch(e){toast('เผยแพร่ไม่สำเร็จ: '+(e.message||e.code||''))}};
 $('#cp').onclick=()=>{const t='const SAVED='+JSON.stringify(Object.fromEntries(Object.entries(L).filter(e=>e[1])))+';';navigator.clipboard.writeText(t).then(()=>toast('คัดลอกแล้ว นำไปแทนบรรทัด const SAVED ในไฟล์'),()=>prompt('คัดลอกข้อความนี้',t))};
+$('#tk').onclick=()=>{const t=prompt('วาง GitHub Token (เก็บในเบราว์เซอร์นี้เท่านั้น)',tok());if(t===null)return;try{localStorage.setItem('skilltree.gh',t.trim())}catch(e){}toast('บันทึก Token แล้ว')};
 draw();
+// โหลดเลเวลล่าสุดจาก GitHub ทุกครั้งที่เปิดเว็บ (ทุกคนเห็นค่าเดียวกัน)
+(async()=>{if(GH.owner==='YOUR_USERNAME')return;try{const r=await fetch(api+'?ref='+GH.branch+'&t='+Date.now(),{headers:{Accept:'application/vnd.github.raw+json'}});if(!r.ok)return;const d=await r.json();N.forEach(n=>{const v=d[n.id];L[n.id]=Number.isInteger(v)&&v>=0&&v<=MAXLV?v:0});draw()}catch(e){}})();
 </script></body></html>
