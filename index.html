@@ -110,7 +110,7 @@ N.forEach(n=>n.k=[]);N.forEach(n=>n.p.forEach(p=>M[p].k.push(n.id)));
 // เลเวลที่เจ้าของบันทึกไว้ (ทุกคนที่เข้าเว็บจะเห็นค่านี้) วางโค้ดจากปุ่ม "คัดลอกโค้ดบันทึก" ทับบรรทัดนี้
 const SAVED={};
 // ตั้งค่า GitHub ของคุณ (เปลี่ยน YOUR_USERNAME และชื่อ repo)
-const GH={owner:'NPKarn',repo:'Skill-Tree-Demo-',path:'levels.json',branch:'main'};
+const GH={owner:'NPKarn',repo:'skill-tree-',path:'levels.json',branch:'main'};
 // SHA-256 ของรหัสผ่านเจ้าของ (ค่าเริ่มต้น: owner-2026) ควรเปลี่ยนเป็นของตัวเอง
 const OWNER_HASH='8650fd1ad9bcef819fa7ab1f2eabee8572e1759779b5a9d46eb161cd697a314e';
 const sha=t=>crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)).then(b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''));
