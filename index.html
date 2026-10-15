@@ -46,7 +46,7 @@ svg{position:absolute;inset:0}
 </style></head><body>
 <header><h1>แผนผังทักษะ · Biomedical Engineer</h1>
 <div class="sp"><span>SP คงเหลือ</span><b id="spv"></b>
-<button class="btn" id="own">🔒 เจ้าของ</button><button class="btn" id="cp">คัดลอกโค้ดบันทึก</button><button class="btn" id="img">โหลดเลเวลจากภาพ</button><button class="btn" id="rst">รีเซ็ต</button></div></header>
+<button class="btn" id="own">🔒 เจ้าของ</button><button class="btn" id="pub">เผยแพร่ให้ทุกคนเห็น</button><button class="btn" id="cp">คัดลอกโค้ดบันทึก</button><button class="btn" id="img">โหลดเลเวลจากภาพ</button><button class="btn" id="rst">รีเซ็ต</button></div></header>
 <div class="tabs" id="tabs"></div>
 <div class="wrap"><div id="cv"></div></div>
 <div id="tip"></div><div id="msg"></div>
@@ -142,6 +142,7 @@ function draw(){
   <div class="ct"><button data-d="-" class="${EDIT?'':'lk'}" ${EDIT&&!canDn(n)?'disabled':''} aria-label="ลด ${n.n}">−</button><span class="lv">${v==MAXLV?'MAX':v+'/'+MAXLV}</span><button data-d="+" class="${EDIT?'':'lk'}" ${EDIT&&!canUp(n)?'disabled':''} aria-label="เพิ่ม ${n.n}">+</button></div></div>`});
  cv.innerHTML=h;$('#spv').textContent=(TOTAL-spent())+' / '+TOTAL;
  $('#rst').style.display=$('#img').style.display=$('#cp').style.display=EDIT?'':'none';
+ $('#pub').style.display=EDIT&&window.claude?'':'none';
  $('#own').textContent=EDIT?'🔓 ล็อกกลับ':'🔒 เจ้าของ';
  const T=[['all','ทั้งหมด','#d9b25f']].concat(Object.entries(BR).map(([k,v])=>[k,v[0],v[1]]));
  $('#tabs').innerHTML=T.map(([k,t,c])=>{const sp=k=='all'?spent():N.filter(n=>n.b==k).reduce((a,n)=>a+L[n.id],0);
@@ -161,6 +162,12 @@ $('#tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b){f
 $('#rst').onclick=()=>{N.forEach(n=>L[n.id]=0);save();draw()};
 $('#img').onclick=()=>{N.forEach(n=>L[n.id]=n.img);save();draw();toast('โหลดเลเวลตามภาพแล้ว')};
 $('#own').onclick=async()=>{if(EDIT){EDIT=false;draw();return}const p=prompt('รหัสผ่านเจ้าของ');if(!p)return;try{if(await sha(p)===OWNER_HASH){EDIT=true;draw();toast('ปลดล็อกโหมดแก้ไขแล้ว')}else toast('รหัสผ่านไม่ถูกต้อง')}catch(e){toast('เบราว์เซอร์นี้ตรวจรหัสผ่านไม่ได้')}};
+$('#pub').onclick=async()=>{try{const a=await claude.use('artifact');if(!a)return toast('หน้านี้ไม่รองรับการเผยแพร่');
+ const c=document.documentElement.cloneNode(true),s=[...c.querySelectorAll('script')].pop();
+ const t=JSON.stringify(Object.fromEntries(Object.entries(L).filter(e=>e[1])));
+ s.textContent=s.textContent.replace(/const SAVED=\{[^\n]*\};/,()=>'const SAVED='+t+';');
+ c.querySelector('#cv').innerHTML='';c.querySelector('#tabs').innerHTML='';
+ toast('กำลังเผยแพร่...');await a.publish('<!DOCTYPE html>\n'+c.outerHTML)}catch(e){toast('เผยแพร่ไม่สำเร็จ: '+(e.message||e.code||''))}};
 $('#cp').onclick=()=>{const t='const SAVED='+JSON.stringify(Object.fromEntries(Object.entries(L).filter(e=>e[1])))+';';navigator.clipboard.writeText(t).then(()=>toast('คัดลอกแล้ว นำไปแทนบรรทัด const SAVED ในไฟล์'),()=>prompt('คัดลอกข้อความนี้',t))};
 draw();
 </script></body></html>
