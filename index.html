@@ -35,6 +35,7 @@ svg{position:absolute;inset:0}
 .ct button:disabled{opacity:.3;cursor:not-allowed}
 .lv{font-size:12px;font-weight:700;color:var(--ink)}
 .nd.lock .lv{color:var(--dim)}
+.ct.ro{justify-content:center}.nd.max .lv{color:#ffd86b;text-shadow:0 0 6px #ffb830;letter-spacing:1px}
 .shake{animation:sh .25s}
 @keyframes sh{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 #tip{position:fixed;z-index:9;pointer-events:none;background:#120d09;border:1px solid var(--gold);padding:8px 10px;font-size:12px;max-width:230px;display:none;border-radius:3px;line-height:1.5}
@@ -45,7 +46,7 @@ svg{position:absolute;inset:0}
 </style></head><body>
 <header><h1>แผนผังทักษะ · Biomedical Engineer</h1>
 <div class="sp"><span>SP คงเหลือ</span><b id="spv"></b>
-<button class="btn" id="img">โหลดเลเวลจากภาพ</button><button class="btn" id="rst">รีเซ็ต</button></div></header>
+<button class="btn" id="own">🔒 เจ้าของ</button><button class="btn" id="cp">คัดลอกโค้ดบันทึก</button><button class="btn" id="img">โหลดเลเวลจากภาพ</button><button class="btn" id="rst">รีเซ็ต</button></div></header>
 <div class="tabs" id="tabs"></div>
 <div class="wrap"><div id="cv"></div></div>
 <div id="tip"></div><div id="msg"></div>
@@ -106,17 +107,22 @@ sw|Solidwork|13|7|me|2|📐|hd
 os|Onshape|13|8|me|3|🧊|sw`.split('\n').map(l=>{const a=l.split('|');return{id:a[0],n:a[1],c:+a[2],r:+a[3],b:a[4],img:+a[5],ic:a[6],p:a[7]?a[7].split(','):[]}});
 const M=Object.fromEntries(N.map(n=>[n.id,n]));
 N.forEach(n=>n.k=[]);N.forEach(n=>n.p.forEach(p=>M[p].k.push(n.id)));
-let L={},focus='all';N.forEach(n=>L[n.id]=0);
+// เลเวลที่เจ้าของบันทึกไว้ (ทุกคนที่เข้าเว็บจะเห็นค่านี้) วางโค้ดจากปุ่ม "คัดลอกโค้ดบันทึก" ทับบรรทัดนี้
+const SAVED={};
+// SHA-256 ของรหัสผ่านเจ้าของ (ค่าเริ่มต้น: owner-2026) ควรเปลี่ยนเป็นของตัวเอง
+const OWNER_HASH='8650fd1ad9bcef819fa7ab1f2eabee8572e1759779b5a9d46eb161cd697a314e';
+const sha=t=>crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)).then(b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''));
+let EDIT=false,L={},focus='all';N.forEach(n=>L[n.id]=SAVED[n.id]||0);
 const $=s=>document.querySelector(s),cv=$('#cv');
 const spent=()=>Object.values(L).reduce((a,b)=>a+b,0);
 const open=n=>n.p.every(p=>L[p]>0);
-const canUp=n=>open(n)&&L[n.id]<MAXLV&&spent()<TOTAL;
-const canDn=n=>L[n.id]>0&&!(L[n.id]===1&&n.k.some(k=>L[k]>0));
+const canUp=n=>EDIT&&open(n)&&L[n.id]<MAXLV&&spent()<TOTAL;
+const canDn=n=>EDIT&&L[n.id]>0&&!(L[n.id]===1&&n.k.some(k=>L[k]>0));
 const px=n=>PX+n.c*W,py=n=>PY+n.r*H;
 let msgT;function toast(t){const m=$('#msg');m.textContent=t;m.style.display='block';clearTimeout(msgT);msgT=setTimeout(()=>m.style.display='none',1800)}
-function up(id){const n=M[id];if(!open(n)){const need=n.p.filter(p=>!L[p]).map(p=>M[p].n).join(', ');return toast('ต้องอัปทักษะก่อน: '+need)}
+function up(id){if(!EDIT)return toast('โหมดดูอย่างเดียว เฉพาะเจ้าของที่แก้ไขได้');const n=M[id];if(!open(n)){const need=n.p.filter(p=>!L[p]).map(p=>M[p].n).join(', ');return toast('ต้องอัปทักษะก่อน: '+need)}
  if(L[id]>=MAXLV)return toast('เลเวลสูงสุดแล้ว');if(spent()>=TOTAL)return toast('SP ไม่พอ');L[id]++;draw()}
-function dn(id){const n=M[id];if(!L[id])return;if(!canDn(n))return toast('ลดไม่ได้ ยังมีทักษะที่ต่อยอดจากข้อนี้');L[id]--;draw()}
+function dn(id){if(!EDIT)return toast('โหมดดูอย่างเดียว เฉพาะเจ้าของที่แก้ไขได้');const n=M[id];if(!L[id])return;if(!canDn(n))return toast('ลดไม่ได้ ยังมีทักษะที่ต่อยอดจากข้อนี้');L[id]--;draw()}
 function draw(){
  let h='';
  ZONES.forEach(([b,c,w])=>{h+=`<div class="zone" style="--c:${BR[b][1]};left:${PX+c*W-6}px;width:${w*W-2}px"><span>${BR[b][0]}</span></div>`});
@@ -129,8 +135,10 @@ function draw(){
  N.forEach(n=>{const o=open(n),v=L[n.id];
   h+=`<div class="nd ${o?'':'lock'} ${v?'on':''} ${v==MAXLV?'max':''} ${focus!='all'&&focus!=n.b?'dim':''}" data-id="${n.id}" style="left:${px(n)}px;top:${py(n)}px">
   <div class="ic" style="border-color:${v?BR[n.b][1]:''}">${n.ic}</div><div class="nm">${n.n}</div>
-  <div class="ct"><button data-d="-" ${canDn(n)?'':'disabled'} aria-label="ลด ${n.n}">−</button><span class="lv">${v}/${MAXLV}</span><button data-d="+" ${canUp(n)?'':'disabled'} aria-label="เพิ่ม ${n.n}">+</button></div></div>`});
+  <div class="ct ${EDIT?'':'ro'}">${EDIT?`<button data-d="-" ${canDn(n)?'':'disabled'} aria-label="ลด ${n.n}">−</button>`:''}<span class="lv">${v==MAXLV?'MAX':v+'/'+MAXLV}</span>${EDIT?`<button data-d="+" ${canUp(n)?'':'disabled'} aria-label="เพิ่ม ${n.n}">+</button>`:''}</div></div>`});
  cv.innerHTML=h;$('#spv').textContent=(TOTAL-spent())+' / '+TOTAL;
+ $('#rst').style.display=$('#img').style.display=$('#cp').style.display=EDIT?'':'none';
+ $('#own').textContent=EDIT?'🔓 ล็อกกลับ':'🔒 เจ้าของ';
  const T=[['all','ทั้งหมด','#d9b25f']].concat(Object.entries(BR).map(([k,v])=>[k,v[0],v[1]]));
  $('#tabs').innerHTML=T.map(([k,t,c])=>{const sp=k=='all'?spent():N.filter(n=>n.b==k).reduce((a,n)=>a+L[n.id],0);
   return `<button class="tab ${focus==k?'on':''}" data-t="${k}" style="--c:${c}">${t} (${sp} SP)</button>`}).join('');
@@ -148,5 +156,7 @@ cv.addEventListener('mouseleave',()=>$('#tip').style.display='none');
 $('#tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b){focus=b.dataset.t;draw()}});
 $('#rst').onclick=()=>{N.forEach(n=>L[n.id]=0);draw()};
 $('#img').onclick=()=>{N.forEach(n=>L[n.id]=n.img);draw();toast('โหลดเลเวลตามภาพแล้ว')};
+$('#own').onclick=async()=>{if(EDIT){EDIT=false;draw();return}const p=prompt('รหัสผ่านเจ้าของ');if(!p)return;try{if(await sha(p)===OWNER_HASH){EDIT=true;draw();toast('ปลดล็อกโหมดแก้ไขแล้ว')}else toast('รหัสผ่านไม่ถูกต้อง')}catch(e){toast('เบราว์เซอร์นี้ตรวจรหัสผ่านไม่ได้')}};
+$('#cp').onclick=()=>{const t='const SAVED='+JSON.stringify(Object.fromEntries(Object.entries(L).filter(e=>e[1])))+';';navigator.clipboard.writeText(t).then(()=>toast('คัดลอกแล้ว นำไปแทนบรรทัด const SAVED ในไฟล์'),()=>prompt('คัดลอกข้อความนี้',t))};
 draw();
 </script></body></html>
